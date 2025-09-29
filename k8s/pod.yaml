@@ -1,0 +1,17 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  name: site-estatico
+  labels:
+    app: site-estatico
+spec:
+  containers:
+    - name: site-estatico
+    # Descomente a imagem da região do registry usado.
+    # Mude o nome do registry e da imagem caso tenha usado um diferente
+      # image: container-registry.br-se1.magalu.cloud/workshop_secomp/site-estatico
+      # image: container-registry.br-ne1.magalu.cloud/workshop_secomp/site-estatico
+      ports:
+        - containerPort: 80
+  imagePullSecrets:
+    - name: magalu-registry-secret

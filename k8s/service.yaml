@@ -1,0 +1,12 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: site-estatico
+spec:
+  type: LoadBalancer
+  selector:
+    app: site-estatico
+  ports:
+    - protocol: TCP
+      port: 80
+      targetPort: 80
