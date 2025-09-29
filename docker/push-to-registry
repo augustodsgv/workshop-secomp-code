@@ -1,0 +1,70 @@
+#!/usr/bin/env bash
+# docker/build.sh - build da imagem docker e push para o registry da Magalu Cloud
+set -euo pipefail
+
+# Help
+usage() {
+  cat <<EOF
+Usage: $(basename "$0") [-h|--help] <registry_name> [mgc_region] [image_name]
+
+  <registry_name>   REQUIRED. Nome do registry (ex: meu-registry)
+  [mgc_region]      Opcional. Região da MGC. Default: br-se1
+  [image_name]      Opcional. Nome da imagem local. Default: site-estatico
+                    Valores aceitos: br-se1, br-ne1
+
+Options:
+  -h, --help        Mostrar esta ajuda.
+Examples:
+  $(basename "$0") my-registry
+  $(basename "$0") my-registry site-estatico br-ne1
+  $(basename "$0") -h
+
+EOF
+}
+
+# --help ou -h
+if [[ "${1:-}" == "-h" || "${1:-}" == "--help" ]]; then
+  usage
+  exit 0
+fi
+
+# Checa se registry_name foi passado
+if [[ "${1:-}" == "" ]]; then
+  echo "ERRO: registry_name não fornecido."
+  usage
+  exit 1
+fi
+
+# Parâmetros posicionais
+registry_name="$1"
+mgc_region="${2:-br-se1}"
+image_name="${3:-site-estatico}"
+
+# valida mgc_region, se foi passado
+allowed_regions=("br-se1" "br-ne1")
+region_ok=false
+for r in "${allowed_regions[@]}"; do
+  if [[ "$mgc_region" == "$r" ]]; then
+    region_ok=true
+    break
+  fi
+done
+
+if [[ "$region_ok" != "true" ]]; then
+  echo "ERRO: mgc_region inválida: '${mgc_region}'."
+  echo "Opções válidas: ${allowed_regions[*]}"
+  usage
+  exit 2
+fi
+
+# Logando no MCR
+docker login https://container-registry.$mgc_region.magalu.cloud
+
+# Buildando imagem localmente
+docker build -t $image_name -f ../docker/dockerfile ..
+
+# Adicionando nova tag na imagem para indicar o registry criado na Magalu Cloud
+docker tag $image_name container-registry.$mgc_region.magalu.cloud/$registry_name/$image_name
+
+# Enviando a imagem do container para a MGC
+docker push container-registry.$mgc_region.magalu.cloud/$registry_name/$image_name
